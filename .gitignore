@@ -7,3 +7,11 @@
 /inspection
 video_report.csv
 open_labels.xlsx
+.env
+.venv/
+__pycache__/
+*.py[cod]
+frontend/node_modules/
+frontend/dist/
+storage/uploads/*
+storage/results/*
