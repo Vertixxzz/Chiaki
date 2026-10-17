@@ -16,7 +16,15 @@ class FeatureDataset:
     ends: np.ndarray
 
 def aggregate(frame_embeddings: np.ndarray) -> np.ndarray:
-    return np.concatenate([frame_embeddings.mean(0), frame_embeddings.std(0), frame_embeddings.max(0)]).astype(np.float32)
+    """Compact ordered representation: summary, positions, and frame-to-frame change."""
+    middle = frame_embeddings[len(frame_embeddings) // 2]
+    if len(frame_embeddings) > 1:
+        diffs = np.diff(frame_embeddings, axis=0)
+        diff_mean, diff_std = diffs.mean(0), diffs.std(0)
+    else:
+        diff_mean = diff_std = np.zeros_like(frame_embeddings[0])
+    return np.concatenate([frame_embeddings.mean(0), frame_embeddings.std(0), frame_embeddings.max(0),
+                           frame_embeddings[0], middle, frame_embeddings[-1], diff_mean, diff_std]).astype(np.float32)
 
 def window_feature(path: Path, start: float, end: float) -> np.ndarray:
     frames = list(read_frames(path, start, end, SETTINGS.frame_sample_fps))
@@ -27,7 +35,8 @@ def make_training_features(videos: list[VideoLabel]) -> FeatureDataset:
     for item in videos:
         _, duration = video_info(item.path)
         event = item.timestamp if item.violation else None
-        for window in labeled_windows(duration, event, SETTINGS.window_size, SETTINGS.window_step):
+        for window in labeled_windows(duration, event, SETTINGS.window_size, SETTINGS.window_step,
+                                      SETTINGS.event_safety_margin):
             rows.append(window_feature(item.path, window.start, window.end)); labels.append(window.label)
             groups.append(item.video_id); starts.append(window.start); ends.append(window.end)
     return FeatureDataset(np.vstack(rows), np.array(labels), np.array(groups), np.array(starts), np.array(ends))

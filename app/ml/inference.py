@@ -1,6 +1,6 @@
 from pathlib import Path
-import joblib
-from app.config import MODELS_DIR, SETTINGS
+import json, joblib
+from app.config import MODELS_DIR, OUTPUTS_DIR, SETTINGS
 from app.ml.features import inference_features
 
 def analyze_video(path: Path) -> dict:
@@ -11,6 +11,9 @@ def analyze_video(path: Path) -> dict:
     best = int(probabilities.argmax())
     probability = float(probabilities[best])
     start, end = windows[best]
-    return {'verdict': 'VIOLATION' if probability >= SETTINGS.threshold else 'NORMAL', 'probability': probability,
+    threshold = SETTINGS.threshold
+    split_path = OUTPUTS_DIR / 'split.json'
+    if split_path.exists(): threshold = float(json.loads(split_path.read_text())['threshold'])
+    return {'verdict': 'VIOLATION' if probability >= threshold else 'NORMAL', 'probability': probability,
             'timestamp': (start + end) / 2, 'window_start': start, 'window_end': end,
             'windows': [{'start': s, 'end': e, 'probability': float(p)} for (s, e), p in zip(windows, probabilities)]}

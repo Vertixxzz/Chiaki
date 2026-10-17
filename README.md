@@ -24,10 +24,15 @@ pip install -r requirements.txt
 python scripts/inspect_dataset.py
 python scripts/train.py
 python scripts/evaluate.py
+python scripts/debug_predictions.py
 uvicorn app.main:app --reload
 ```
 
 Откройте http://127.0.0.1:8000. Первый запуск OpenCLIP может скачать веса модели. Данные должны лежать в `dataset/`, включая `open_labels.xlsx`.
+
+Для честного сравнения temporal sampling сначала выполните полный цикл с 2 FPS, затем отдельный с 4 FPS: `FRAME_SAMPLE_FPS=4 python scripts/train.py` и `FRAME_SAMPLE_FPS=4 python scripts/evaluate.py`. Признаки кэшируются в разных файлах. Не выбирайте вариант по held-out метрикам: `train.py` выбирает классификатор и threshold только по grouped CV обучающих видео.
+
+`debug_predictions.py` создаёт `outputs/heldout_windows.csv` (по убыванию вероятности) и кадры TP/FP/FN/TN в `outputs/evidence_frames/`; это только диагностические материалы, не данные обучения.
 
 ## Ограничения baseline
 
