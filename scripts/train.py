@@ -11,7 +11,7 @@ from sklearn.model_selection import StratifiedGroupKFold
 from app.config import MODELS_DIR, OUTPUTS_DIR, SETTINGS
 from app.data.dataset import load_labels
 from app.ml.classifier import classifier_names, make_classifier
-from app.ml.evaluation import binary_metrics, choose_threshold, choose_video_threshold, grouped_cv, video_scores
+from app.ml.evaluation import AGGREGATION_STRATEGIES, aggregation_cv, binary_metrics, choose_threshold, choose_video_threshold, grouped_cv, video_scores
 from app.ml.features import make_training_features, save_features, load_features
 
 def main() -> None:
@@ -28,9 +28,10 @@ def main() -> None:
     print(f'Videos: {len(videos)} (positive {sum(targets.values())}, negative {len(videos)-sum(targets.values())})')
     print(f'Windows: {len(features.y)} (positive {features.y.sum()}, negative {len(features.y)-features.y.sum()})')
     print(f'Held-out test videos: {len(test_ids)}; training videos: {len(train_ids)}')
-    comparison = {}; best_name = None; best_f1 = -1.; best_recall = -1.; best_window_threshold = .5; best_video_threshold = .5
+    comparison = {}; cv_results = {}; best_name = None; best_f1 = -1.; best_recall = -1.; best_window_threshold = .5; best_video_threshold = .5
     for name in classifier_names():
         result = grouped_cv(features, train_mask, targets, name)
+        cv_results[name] = result
         window_threshold = choose_threshold(features.y[train_mask], result.probabilities)
         # Every OOF prediction is from that fold's validation partition. Aggregate
         # each validation video's windows before selecting the product threshold.
@@ -50,14 +51,27 @@ def main() -> None:
         f1, recall = video_summary['f1']['mean'], video_summary['recall']['mean']
         if f1 > best_f1 + .01 or (abs(f1 - best_f1) <= .01 and recall > best_recall):
             best_name, best_f1, best_recall, best_window_threshold, best_video_threshold = name, f1, recall, window_threshold, video_threshold
+    # Controlled aggregation experiment: same selected classifier and same OOF
+    # validation predictions for all strategies; held-out videos are untouched.
+    aggregation_comparison = {}; selected_aggregation = 'top2_mean'; aggregation_f1 = -1.; aggregation_recall = -1.
+    print('CV aggregation comparison (selected classifier only):')
+    for strategy in AGGREGATION_STRATEGIES:
+        metrics, fold_thresholds, threshold = aggregation_cv(cv_results[best_name], targets, strategy)
+        summary = {key: {'mean': float(np.nanmean([fold[key] for fold in metrics])), 'std': float(np.nanstd([fold[key] for fold in metrics]))} for key in metrics[0]}
+        aggregation_comparison[strategy] = {'metrics': summary, 'fold_thresholds': fold_thresholds, 'video_threshold': threshold}
+        print(f"{strategy}: video F1={summary['f1']['mean']:.3f}±{summary['f1']['std']:.3f}, recall={summary['recall']['mean']:.3f}±{summary['recall']['std']:.3f}, precision={summary['precision']['mean']:.3f}±{summary['precision']['std']:.3f}, video_threshold={threshold:.2f}")
+        f1, recall = summary['f1']['mean'], summary['recall']['mean']
+        if f1 > aggregation_f1 + .01 or (abs(f1 - aggregation_f1) <= .01 and recall > aggregation_recall):
+            selected_aggregation, aggregation_f1, aggregation_recall, best_video_threshold = strategy, f1, recall, threshold
     model = make_classifier(best_name); model.fit(features.x[train_mask], features.y[train_mask])
     MODELS_DIR.mkdir(exist_ok=True); OUTPUTS_DIR.mkdir(exist_ok=True); joblib.dump(model, MODELS_DIR / 'baseline.joblib')
-    payload = {'train_ids': sorted(train_ids), 'test_ids': sorted(test_ids), 'selected_model': best_name, 'window_threshold': best_window_threshold, 'video_threshold': best_video_threshold, 'comparison': comparison}
+    payload = {'train_ids': sorted(train_ids), 'test_ids': sorted(test_ids), 'selected_model': best_name, 'window_threshold': best_window_threshold, 'video_threshold': best_video_threshold, 'aggregation_strategy': selected_aggregation, 'comparison': comparison, 'aggregation_comparison': aggregation_comparison}
     (OUTPUTS_DIR / 'split.json').write_text(json.dumps(payload, indent=2), encoding='utf-8')
     print('CV model comparison:')
     for name, result in comparison.items():
         metrics = result['video_fold_metrics']
         print(f"{name}: video F1={metrics['f1']['mean']:.3f}±{metrics['f1']['std']:.3f}, recall={metrics['recall']['mean']:.3f}±{metrics['recall']['std']:.3f}, precision={metrics['precision']['mean']:.3f}±{metrics['precision']['std']:.3f}")
+    print(f'Selected aggregation from CV only: strategy={selected_aggregation}; video_threshold={best_video_threshold:.2f}')
     print(f'Selected from CV only: classifier={best_name}; video_threshold={best_video_threshold:.2f}. Run evaluate.py for untouched test metrics.')
 
 if __name__ == '__main__': main()

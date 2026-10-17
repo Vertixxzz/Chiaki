@@ -23,7 +23,7 @@ def main() -> None:
         metric = binary_metrics(y, probabilities, threshold)
         print(f"window threshold={threshold:.1f}: accuracy={metric['accuracy']:.3f} precision={metric['precision']:.3f} recall={metric['recall']:.3f} F1={metric['f1']:.3f}")
     print(f"Window confusion matrix at selected validation threshold ({window_threshold:.2f}):\n", confusion_matrix(y, probabilities >= window_threshold))
-    vy, vp, _ = video_scores(features.groups[mask], probabilities, targets)
+    vy, vp, _ = video_scores(features.groups[mask], probabilities, targets, split.get('aggregation_strategy', 'top2_mean'))
     for threshold in (0.3, 0.5, 0.7, window_threshold, video_threshold):
         metric = binary_metrics(vy, vp, threshold)
         print(f"video threshold={threshold:.2f}: accuracy={metric['accuracy']:.3f} precision={metric['precision']:.3f} recall={metric['recall']:.3f} F1={metric['f1']:.3f} AUC={metric['roc_auc']:.3f}")

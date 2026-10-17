@@ -13,15 +13,27 @@ def binary_metrics(y: np.ndarray, p: np.ndarray, threshold: float) -> dict[str, 
     return {'accuracy': accuracy_score(y, pred), 'precision': precision, 'recall': recall, 'f1': f1,
             'roc_auc': roc_auc_score(y, p) if len(np.unique(y)) == 2 else float('nan'), 'positive_rate': float(pred.mean())}
 
-def aggregate_video_probability(probabilities: np.ndarray) -> float:
-    """Robust video score: average the two strongest window probabilities."""
-    values = np.sort(probabilities)
-    return float(values[-min(2, len(values)):].mean())
+AGGREGATION_STRATEGIES = (
+    'max', 'top2_mean', 'top3_mean', 'top2_weighted', 'top3_weighted',
+)
 
-def video_scores(groups: np.ndarray, probabilities: np.ndarray, video_targets: dict[str, int]) -> tuple[np.ndarray, np.ndarray, list[str]]:
+def aggregate_video_probability(probabilities: np.ndarray, strategy: str = 'top2_mean') -> float:
+    """Aggregate sorted window probabilities without changing the classifier."""
+    values = np.sort(probabilities)
+    if strategy == 'max': return float(values[-1])
+    if strategy == 'top2_mean': return float(values[-min(2, len(values)):].mean())
+    if strategy == 'top3_mean': return float(values[-min(3, len(values)):].mean())
+    if strategy == 'top2_weighted':
+        top = values[-min(2, len(values)):][::-1]; weights = np.array([.7, .3])[:len(top)]
+    elif strategy == 'top3_weighted':
+        top = values[-min(3, len(values)):][::-1]; weights = np.array([.6, .3, .1])[:len(top)]
+    else: raise ValueError(f'Unknown aggregation strategy: {strategy}')
+    return float(np.average(top, weights=weights))
+
+def video_scores(groups: np.ndarray, probabilities: np.ndarray, video_targets: dict[str, int], strategy: str = 'top2_mean') -> tuple[np.ndarray, np.ndarray, list[str]]:
     ids = sorted(set(groups)); scores = []; labels = []
     for video_id in ids:
-        scores.append(aggregate_video_probability(probabilities[groups == video_id]))
+        scores.append(aggregate_video_probability(probabilities[groups == video_id], strategy))
         labels.append(video_targets[video_id])
     return np.array(labels), np.array(scores), ids
 
@@ -56,15 +68,18 @@ class CVResult:
     folds: list[dict[str, float]]
     video_folds: list[dict[str, float]]
     video_thresholds: list[float]
+    fold_groups: list[np.ndarray]
+    fold_probabilities: list[np.ndarray]
 
 def grouped_cv(dataset: FeatureDataset, train_mask: np.ndarray, video_targets: dict[str, int], classifier: str) -> CVResult:
     indices = np.flatnonzero(train_mask); groups = dataset.groups[indices]
     group_y = np.array([video_targets[g] for g in groups])
     splitter = StratifiedGroupKFold(n_splits=SETTINGS.cv_folds, shuffle=True, random_state=SETTINGS.random_seed)
-    probabilities = np.full(len(indices), np.nan); folds = []; video_folds = []; video_thresholds = []
+    probabilities = np.full(len(indices), np.nan); folds = []; video_folds = []; video_thresholds = []; fold_groups = []; fold_probabilities = []
     for fit, valid in splitter.split(dataset.x[indices], group_y, groups):
         model = make_classifier(classifier); model.fit(dataset.x[indices][fit], dataset.y[indices][fit])
         p = model.predict_proba(dataset.x[indices][valid])[:, 1]; probabilities[valid] = p
+        fold_groups.append(groups[valid]); fold_probabilities.append(p)
         folds.append(binary_metrics(dataset.y[indices][valid], p, .5))
         # `valid` contains whole unseen videos. Aggregate only these windows,
         # then select/evaluate this fold's video threshold without held-out data.
@@ -72,4 +87,16 @@ def grouped_cv(dataset: FeatureDataset, train_mask: np.ndarray, video_targets: d
         threshold = choose_video_threshold(y_video, p_video)
         video_thresholds.append(threshold)
         video_folds.append(binary_metrics(y_video, p_video, threshold))
-    return CVResult(probabilities, folds, video_folds, video_thresholds)
+    return CVResult(probabilities, folds, video_folds, video_thresholds, fold_groups, fold_probabilities)
+
+def aggregation_cv(result: CVResult, video_targets: dict[str, int], strategy: str) -> tuple[list[dict[str, float]], list[float], float]:
+    """Evaluate one video aggregator only on the model's grouped CV validation outputs."""
+    fold_metrics: list[dict[str, float]] = []; fold_thresholds: list[float] = []
+    all_groups = []; all_probabilities = []
+    for groups, probabilities in zip(result.fold_groups, result.fold_probabilities):
+        y, scores, _ = video_scores(groups, probabilities, video_targets, strategy)
+        threshold = choose_video_threshold(y, scores)
+        fold_thresholds.append(threshold); fold_metrics.append(binary_metrics(y, scores, threshold))
+        all_groups.append(groups); all_probabilities.append(probabilities)
+    y, scores, _ = video_scores(np.concatenate(all_groups), np.concatenate(all_probabilities), video_targets, strategy)
+    return fold_metrics, fold_thresholds, choose_video_threshold(y, scores)

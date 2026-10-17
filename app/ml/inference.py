@@ -10,11 +10,15 @@ def analyze_video(path: Path) -> dict:
     features, windows = inference_features(path)
     probabilities = joblib.load(model_path).predict_proba(features)[:, 1]
     best = int(probabilities.argmax())
-    probability = aggregate_video_probability(probabilities)
     start, end = windows[best]
     threshold = SETTINGS.threshold
     split_path = OUTPUTS_DIR / 'split.json'
-    if split_path.exists(): threshold = float(json.loads(split_path.read_text()).get('video_threshold', SETTINGS.threshold))
+    strategy = 'top2_mean'
+    if split_path.exists():
+        selected = json.loads(split_path.read_text())
+        threshold = float(selected.get('video_threshold', SETTINGS.threshold))
+        strategy = selected.get('aggregation_strategy', strategy)
+    probability = aggregate_video_probability(probabilities, strategy)
     return {'verdict': 'VIOLATION' if probability >= threshold else 'NORMAL', 'probability': probability,
             'timestamp': (start + end) / 2, 'window_start': start, 'window_end': end,
             'windows': [{'start': s, 'end': e, 'probability': float(p)} for (s, e), p in zip(windows, probabilities)]}
