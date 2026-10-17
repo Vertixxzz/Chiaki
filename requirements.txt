@@ -1,4 +1,12 @@
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+torch
+open-clip-torch
 opencv-python
+numpy
 pandas
 openpyxl
-Pillow
+scikit-learn
+joblib

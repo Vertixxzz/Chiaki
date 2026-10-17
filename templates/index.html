@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Forte Vision</title><link rel="stylesheet" href="/static/style.css"></head>
+<body><main><h1>Forte Vision</h1><p>Проверка видео кассовой операции: normal или violation.</p>
+<form action="/analyze" method="post" enctype="multipart/form-data">
+  <label>Видео .mov <input name="video" type="file" accept=".mov" required></label>
+  <button type="submit">Analyze</button>
+</form><p class="note">Страница покажет статус обработки и итог после завершения. Для интеграций доступны <code>POST /api/v1/analyze</code> и <code>GET /api/v1/jobs/{job_id}</code>.</p>
+</main></body></html>

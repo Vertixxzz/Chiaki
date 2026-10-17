@@ -1,0 +1,2 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><link rel="stylesheet" href="/static/style.css"></head>
+<body><main>{% if error %}<h1>Ошибка анализа</h1><p>{{ error }}</p>{% else %}<h1>{{ result.verdict }}</h1><p>Probability: {{ '%.3f'|format(result.probability) }}</p><p>Подозрительное окно: {{ '%.1f'|format(result.window_start) }}–{{ '%.1f'|format(result.window_end) }} сек.</p>{% endif %}<p><a href="/">Новое видео</a></p></main></body></html>
