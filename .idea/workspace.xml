@@ -1,54 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="b3682542-1cee-489d-837b-1275957532cc" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/dataset/X-1.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/X-2.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-10.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-11.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-12.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-13.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-14.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-15.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-16.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-17.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-18.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-19.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-20.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-21.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-22.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-23.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-24.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-25.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-26.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-27.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-28.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-29.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-3.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-30.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-31.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-32.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-33.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-34.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-35.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-37.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-38.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-39.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-4.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-40.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-43.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-44.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-45.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-46.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-47.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-48.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-5.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/Х-8.mov" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/inspect_dataset.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/inspect_events.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/open_labels.xlsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="b3682542-1cee-489d-837b-1275957532cc" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -106,7 +59,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1792223024787</updated>
-      <workItem from="1792223025807" duration="3720000" />
+      <workItem from="1792223025807" duration="4022000" />
     </task>
     <servers />
   </component>
