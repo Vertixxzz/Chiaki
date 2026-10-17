@@ -1,3 +1,6 @@
 /.idea
 /open
+/dataset
+/open_labels.xlsx
 /venv
+/inspection
