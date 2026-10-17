@@ -12,7 +12,7 @@ def save_frame(video: Path, timestamp: float, destination: Path) -> None:
     if ok: cv2.imwrite(str(destination), frame)
 
 def main() -> None:
-    split = json.loads((OUTPUTS_DIR / 'split.json').read_text()); test_ids = set(split['test_ids']); threshold = split['threshold']
+    split = json.loads((OUTPUTS_DIR / 'split.json').read_text()); test_ids = set(split['test_ids']); threshold = split['window_threshold']
     data = load_features(OUTPUTS_DIR / f'features_ordered_v1_{SETTINGS.frame_sample_fps:g}fps.npz'); mask = np.isin(data.groups, list(test_ids))
     probabilities = joblib.load(MODELS_DIR / 'baseline.joblib').predict_proba(data.x[mask])[:, 1]
     report = pd.DataFrame({'video_id': data.groups[mask], 'start_sec': data.starts[mask], 'end_sec': data.ends[mask], 'true_label': data.y[mask], 'predicted_probability': probabilities})

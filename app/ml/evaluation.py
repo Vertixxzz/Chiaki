@@ -13,11 +13,15 @@ def binary_metrics(y: np.ndarray, p: np.ndarray, threshold: float) -> dict[str, 
     return {'accuracy': accuracy_score(y, pred), 'precision': precision, 'recall': recall, 'f1': f1,
             'roc_auc': roc_auc_score(y, p) if len(np.unique(y)) == 2 else float('nan'), 'positive_rate': float(pred.mean())}
 
+def aggregate_video_probability(probabilities: np.ndarray) -> float:
+    """Robust video score: average the two strongest window probabilities."""
+    values = np.sort(probabilities)
+    return float(values[-min(2, len(values)):].mean())
+
 def video_scores(groups: np.ndarray, probabilities: np.ndarray, video_targets: dict[str, int]) -> tuple[np.ndarray, np.ndarray, list[str]]:
     ids = sorted(set(groups)); scores = []; labels = []
     for video_id in ids:
-        values = np.sort(probabilities[groups == video_id])
-        scores.append(float(values[-min(2, len(values)):].mean()))
+        scores.append(aggregate_video_probability(probabilities[groups == video_id]))
         labels.append(video_targets[video_id])
     return np.array(labels), np.array(scores), ids
 
@@ -29,6 +33,21 @@ def choose_threshold(y: np.ndarray, p: np.ndarray) -> float:
         if metric['precision'] >= .15 and metric['positive_rate'] <= .70:
             f2 = 5 * metric['precision'] * metric['recall'] / (4 * metric['precision'] + metric['recall'] + 1e-12)
             if f2 > best[1]: best = (float(threshold), f2)
+    return best[0]
+
+def choose_video_threshold(y: np.ndarray, scores: np.ndarray) -> float:
+    """Choose threshold on validation *videos*, maximizing F1 and then recall.
+
+    Input scores must be out-of-fold: each video is first scored by a model that
+    did not train on that video. The positive-rate guard avoids all-positive
+    solutions on the small dataset.
+    """
+    best = (.5, -1.0, -1.0)
+    for threshold in np.arange(.15, .86, .05):
+        metric = binary_metrics(y, scores, threshold)
+        if metric['precision'] >= .15 and metric['positive_rate'] <= .70:
+            candidate = (float(threshold), metric['f1'], metric['recall'])
+            if candidate[1:] > best[1:]: best = candidate
     return best[0]
 
 @dataclass
