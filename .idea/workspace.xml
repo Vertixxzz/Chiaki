@@ -2,12 +2,64 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="b3682542-1cee-489d-837b-1275957532cc" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/X-1.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/X-2.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-10.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-11.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-12.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-13.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-14.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-15.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-16.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-17.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-18.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-19.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-20.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-21.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-22.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-23.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-24.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-25.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-26.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-27.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-28.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-29.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-3.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-30.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-31.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-32.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-33.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-34.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-35.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-37.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-38.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-39.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-4.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-40.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-43.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-44.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-45.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-46.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-47.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-48.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-5.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dataset/Х-8.mov" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/inspect_dataset.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/inspect_events.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/open_labels.xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -24,6 +76,8 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.inspect_dataset.executor": "Run",
+    "Python.inspect_events.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
@@ -32,6 +86,12 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/dataset" />
+    </key>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -46,22 +106,15 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1792223024787</updated>
-      <workItem from="1792223025807" duration="604000" />
+      <workItem from="1792223025807" duration="3720000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/main.py</url>
-          <line>8</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/PythonProject$inspect_events.coverage" NAME="inspect_events Coverage Results" MODIFIED="1792226495557" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/PythonProject$inspect_dataset.coverage" NAME="inspect_dataset Coverage Results" MODIFIED="1792226340221" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
