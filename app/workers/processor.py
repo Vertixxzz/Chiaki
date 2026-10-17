@@ -6,48 +6,65 @@ from app.services.analyzer import (
     Analyzer,
     AnalyzerNotConfiguredError,
 )
-from app.services.job_manager import job_manager
+from app.services.job_store import job_store
 
 logger = logging.getLogger(__name__)
-
 analyzer = Analyzer()
 
 
-def process_video(job_id: str, video_path: Path) -> None:
-    try:
-        result = analyzer.analyze(video_path)
+def process_video(
+    job_id: str,
+    video_path: Path,
+    claim_token: str,
+) -> None:
+    owns_job = False
 
-        job_manager.update(
-            job_id,
-            AnalysisResult(
-                job_id=job_id,
-                status="done",
-                **result,
-            ),
+    try:
+        payload = analyzer.analyze(video_path)
+
+        result = AnalysisResult(
+            job_id=job_id,
+            status="done",
+            **payload,
         )
 
+        if result.verdict is None:
+            raise ValueError("Analyzer returned no verdict")
+
+        if result.verdict == "no_violation" and result.violations:
+            raise ValueError(
+                "no_violation verdict cannot contain violations"
+            )
+
+        if result.verdict == "violation" and not result.violations:
+            raise ValueError(
+                "violation verdict requires at least one event"
+            )
+
+        owns_job = job_store.complete(result, claim_token)
+
+        if not owns_job:
+            logger.warning(
+                "Ignoring stale result for job %s",
+                job_id,
+            )
+
     except AnalyzerNotConfiguredError as exc:
-        job_manager.update(
+        owns_job = job_store.fail(
             job_id,
-            AnalysisResult(
-                job_id=job_id,
-                status="failed",
-                error=str(exc),
-            ),
+            claim_token,
+            str(exc),
         )
 
     except Exception:
         logger.exception("Analysis failed for job %s", job_id)
 
-        job_manager.update(
+        owns_job = job_store.fail(
             job_id,
-            AnalysisResult(
-                job_id=job_id,
-                status="failed",
-                error="analysis_failed",
-            ),
+            claim_token,
+            "analysis_failed",
         )
 
     finally:
-        # Удаляем временное видео после завершения обработки.
-        video_path.unlink(missing_ok=True)
+        if owns_job:
+            video_path.unlink(missing_ok=True)

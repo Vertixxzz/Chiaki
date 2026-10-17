@@ -70,10 +70,11 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeRequestRef = useRef(false);
 
-  const isProcessing = result?.status === "processing";
+  const isActive =
+    result?.status === "queued" || result?.status === "processing";
 
   useEffect(() => {
-    if (!isProcessing) {
+    if (!isActive) {
       return;
     }
 
@@ -84,7 +85,7 @@ function App() {
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [result?.job_id, isProcessing]);
+  }, [result?.job_id, isActive]);
 
   function selectFile(candidate: File | undefined) {
     if (!candidate) {
@@ -118,14 +119,20 @@ function App() {
       const initialResult = await uploadVideo(file, apiKey.trim());
       setResult(initialResult);
 
-      if (initialResult.status !== "processing") {
+      if (
+        initialResult.status !== "queued" &&
+        initialResult.status !== "processing"
+      ) {
         return;
       }
 
       const startedAt = Date.now();
       let currentResult = initialResult;
 
-      while (currentResult.status === "processing") {
+      while (
+        currentResult.status === "queued" ||
+        currentResult.status === "processing"
+      ) {
         if (Date.now() - startedAt >= MAX_ANALYSIS_TIME_MS) {
           throw new Error(
             "Analysis polling timed out. Your job may still be running.",
@@ -136,7 +143,11 @@ function App() {
           window.setTimeout(resolve, POLL_INTERVAL_MS),
         );
 
-        currentResult = await getJob(initialResult.job_id, apiKey.trim());
+        currentResult = await getJob(
+          initialResult.job_id,
+          apiKey.trim(),
+        );
+
         setResult(currentResult);
       }
     } catch (caughtError) {
@@ -164,10 +175,11 @@ function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <a className="brand" href="#" aria-label="Cashier Vision AI home">
+        <a className="brand" href="#" aria-label="Chiaki home">
           <div className="brand-mark">
             <ScanEye size={23} />
           </div>
+
           <div className="brand-copy">
             <span>Chiaki</span>
             <small>CASHIER INTELLIGENCE</small>
@@ -177,6 +189,7 @@ function App() {
         <div className="sidebar-divider" />
 
         <p className="nav-label">WORKSPACE</p>
+
         <div className="nav-item active">
           <Activity size={18} />
           <span>Video analysis</span>
@@ -186,6 +199,7 @@ function App() {
         <div className="sidebar-bottom">
           <div className="local-status">
             <span className="status-dot" />
+
             <div>
               <strong>Local inference</strong>
               <small>API connection configured</small>
@@ -212,6 +226,7 @@ function App() {
               <span className="status-dot" />
               DEVELOPMENT
             </span>
+
             <div className="avatar">
               <Fingerprint size={18} />
             </div>
@@ -223,6 +238,7 @@ function App() {
             <div>
               <p className="eyebrow">VIDEO INTELLIGENCE / 001</p>
               <h1>Cashier analysis</h1>
+
               <p className="page-description">
                 Analyze cashier-operation footage and review visually
                 detected events.
@@ -241,6 +257,7 @@ function App() {
                 <div className="section-icon">
                   <UploadCloud size={19} />
                 </div>
+
                 <div>
                   <h2>Upload footage</h2>
                   <p>Select a video to start a new analysis job.</p>
@@ -270,23 +287,33 @@ function App() {
                     <div className="file-icon">
                       <FileVideo size={27} />
                     </div>
-                    <strong className="dropzone-title">{file.name}</strong>
+
+                    <strong className="dropzone-title">
+                      {file.name}
+                    </strong>
+
                     <span className="dropzone-subtitle">
                       {formatBytes(file.size)} · Ready for analysis
                     </span>
-                    <span className="change-file">Choose another file</span>
+
+                    <span className="change-file">
+                      Choose another file
+                    </span>
                   </>
                 ) : (
                   <>
                     <div className="upload-icon">
                       <UploadCloud size={29} />
                     </div>
+
                     <strong className="dropzone-title">
                       Drop your video here
                     </strong>
+
                     <span className="dropzone-subtitle">
                       or click to browse your files
                     </span>
+
                     <span className="format-chip">MOV VIDEO</span>
                   </>
                 )}
@@ -297,19 +324,28 @@ function App() {
                 type="file"
                 accept=".mov,video/quicktime"
                 hidden
-                onChange={(event) => selectFile(event.target.files?.[0])}
+                onChange={(event) =>
+                  selectFile(event.target.files?.[0])
+                }
               />
 
               <div className="upload-meta">
-                <span><CheckCircle2 size={14} /> MOV format</span>
-                <span><CheckCircle2 size={14} /> Max. 200 MB</span>
+                <span>
+                  <CheckCircle2 size={14} /> MOV format
+                </span>
+
+                <span>
+                  <CheckCircle2 size={14} /> Max. 200 MB
+                </span>
               </div>
 
               <label className="field-label" htmlFor="api-key">
                 API ACCESS KEY
               </label>
+
               <div className="api-key-input">
                 <Fingerprint size={17} />
+
                 <input
                   id="api-key"
                   type={showApiKey ? "text" : "password"}
@@ -319,22 +355,27 @@ function App() {
                   autoComplete="off"
                   spellCheck={false}
                 />
+
                 <button
                   type="button"
                   className="text-button"
-                  onClick={() => setShowApiKey((current) => !current)}
+                  onClick={() =>
+                    setShowApiKey((current) => !current)
+                  }
                 >
                   {showApiKey ? "Hide" : "Show"}
                 </button>
               </div>
+
               <p className="field-hint">
-                Your key is kept in this page's memory and is not saved.
+                Your key is kept in this page&apos;s memory and is not saved.
               </p>
 
               {error && (
                 <div className="error-banner" role="alert">
                   <AlertCircle size={17} />
                   <span>{error}</span>
+
                   <button
                     type="button"
                     aria-label="Dismiss error"
@@ -354,7 +395,9 @@ function App() {
                 {isSubmitting ? (
                   <>
                     <LoaderCircle className="spin" size={18} />
-                    {isProcessing ? "Analyzing footage..." : "Submitting..."}
+                    {isActive
+                      ? "Analyzing footage..."
+                      : "Submitting..."}
                   </>
                 ) : (
                   <>
@@ -375,10 +418,12 @@ function App() {
                 <div className="section-icon">
                   <Activity size={19} />
                 </div>
+
                 <div>
                   <h2>Analysis report</h2>
                   <p>Review the status and detected events.</p>
                 </div>
+
                 {result && (
                   <button
                     className="icon-button"
@@ -397,15 +442,19 @@ function App() {
                   <div className="empty-illustration">
                     <div className="empty-ring ring-one" />
                     <div className="empty-ring ring-two" />
+
                     <div className="empty-center">
                       <ScanEye size={34} />
                     </div>
                   </div>
+
                   <h3>Nothing to review yet</h3>
+
                   <p>
                     Upload a video and start an analysis. The report will
                     appear here when the API returns a result.
                   </p>
+
                   <div className="empty-hint">
                     <Clock3 size={15} />
                     <span>Results appear asynchronously</span>
@@ -415,19 +464,35 @@ function App() {
 
               {isSubmitting && !result && (
                 <div className="empty-state">
-                  <LoaderCircle className="spin loading-large" size={38} />
+                  <LoaderCircle
+                    className="spin loading-large"
+                    size={38}
+                  />
+
                   <h3>Submitting video</h3>
-                  <p>Uploading footage and creating an analysis job…</p>
+                  <p>
+                    Uploading footage and creating an analysis job…
+                  </p>
                 </div>
               )}
 
-              {result?.status === "processing" && (
+              {isActive && result && (
                 <div className="processing-state">
                   <div className="processing-banner">
                     <LoaderCircle className="spin" size={20} />
+
                     <div>
-                      <strong>Analysis in progress</strong>
-                      <p>The worker is processing your video.</p>
+                      <strong>
+                        {result.status === "queued"
+                          ? "Waiting in queue"
+                          : "Analysis in progress"}
+                      </strong>
+
+                      <p>
+                        {result.status === "queued"
+                          ? "Your video is waiting for an available worker."
+                          : "The worker is processing your video."}
+                      </p>
                     </div>
                   </div>
 
@@ -435,13 +500,16 @@ function App() {
                     <span>JOB IDENTIFIER</span>
                     <code>{result.job_id}</code>
                   </div>
+
                   <div className="job-detail">
                     <span>ELAPSED TIME</span>
                     <strong>{formatTime(elapsedSeconds)}</strong>
                   </div>
+
                   <div className="progress-track">
                     <div className="progress-indeterminate" />
                   </div>
+
                   <p className="processing-caption">
                     This is an indeterminate progress indicator; actual
                     processing progress is not reported by the current API.
@@ -454,17 +522,22 @@ function App() {
                   <div className="verdict-icon failure-icon">
                     <XCircle size={27} />
                   </div>
+
                   <span className="result-kicker">TASK FAILED</span>
                   <h3>Analysis could not be completed</h3>
+
                   <p>
                     {result.error === "analyzer_not_configured"
                       ? "The API is working, but the real ML analyzer has not been connected yet."
-                      : result.error || "An unexpected analysis error occurred."}
+                      : result.error ||
+                        "An unexpected analysis error occurred."}
                   </p>
+
                   <div className="job-detail">
                     <span>JOB IDENTIFIER</span>
                     <code>{result.job_id}</code>
                   </div>
+
                   <button
                     className="secondary-button"
                     type="button"
@@ -491,8 +564,12 @@ function App() {
                         <CheckCircle2 size={25} />
                       )}
                     </div>
+
                     <div>
-                      <span className="result-kicker">ANALYSIS VERDICT</span>
+                      <span className="result-kicker">
+                        ANALYSIS VERDICT
+                      </span>
+
                       <h3>
                         {result.verdict === "violation"
                           ? "Potential violation detected"
@@ -500,6 +577,7 @@ function App() {
                             ? "No violation detected"
                             : "Analysis completed"}
                       </h3>
+
                       <p>
                         {result.violations.length} event
                         {result.violations.length === 1 ? "" : "s"} reported
@@ -512,6 +590,7 @@ function App() {
                       <span>REPORTED EVENTS</span>
                       <strong>{result.violations.length}</strong>
                     </div>
+
                     <div>
                       <span>JOB IDENTIFIER</span>
                       <code>{result.job_id.slice(0, 13)}…</code>
@@ -525,7 +604,10 @@ function App() {
                     </div>
                   ) : (
                     <div className="violations-list">
-                      <h3 className="list-heading">Detected events</h3>
+                      <h3 className="list-heading">
+                        Detected events
+                      </h3>
+
                       {result.violations.map((violation, index) => (
                         <article
                           className="violation-card"
@@ -535,13 +617,17 @@ function App() {
                             <span className="event-number">
                               EVENT {String(index + 1).padStart(2, "0")}
                             </span>
+
                             <span className="timecode">
                               <Clock3 size={13} />
                               {formatTime(violation.timecode_sec)}
                             </span>
                           </div>
 
-                          <h4>{violation.type.replaceAll("_", " ")}</h4>
+                          <h4>
+                            {violation.type.replaceAll("_", " ")}
+                          </h4>
+
                           <p>{violation.description}</p>
 
                           {violation.evidence_frames.length > 0 && (
@@ -559,6 +645,7 @@ function App() {
                                       src={getEvidenceSrc(frame)}
                                       alt={`Evidence at ${formatTime(frame.timestamp_sec)}`}
                                     />
+
                                     <span>
                                       <Clock3 size={12} />
                                       {formatTime(frame.timestamp_sec)}
@@ -584,8 +671,14 @@ function App() {
           </section>
 
           <footer className="page-footer">
-            <span> CASHIER VISION AI <span className="footer-dot">/</span> LOCAL VIDEO ANALYTICS </span>
-            <span><ShieldCheck size={14} /> Privacy-conscious by design</span>
+            <span>
+              CHIAKI <span className="footer-dot">/</span> LOCAL VIDEO ANALYTICS
+            </span>
+
+            <span>
+              <ShieldCheck size={14} />
+              Privacy-conscious by design
+            </span>
           </footer>
         </div>
       </main>

@@ -1,4 +1,8 @@
-export type JobStatus = "processing" | "done" | "failed";
+export type JobStatus =
+  | "queued"
+  | "processing"
+  | "done"
+  | "failed";
 
 export type Verdict = "no_violation" | "violation";
 

@@ -14,8 +14,7 @@ from fastapi import (
 
 from app.config import settings
 from app.schemas.analysis import AnalysisResult
-from app.services.job_manager import job_manager
-from app.workers.processor import process_video
+from app.services.job_store import job_store
 
 router = APIRouter(prefix="/api/v1", tags=["Analysis"])
 
@@ -38,7 +37,6 @@ def verify_api_key(
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def analyze_video(
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     _: None = Depends(verify_api_key),
 ) -> AnalysisResult:
@@ -83,12 +81,9 @@ async def analyze_video(
     finally:
         await file.close()
 
-    job = job_manager.create()
-
-    background_tasks.add_task(
-        process_video,
-        job.job_id,
-        video_path,
+    job = job_store.create(
+        job_id=str(uuid4()),
+        video_path=video_path,
     )
 
     return job
@@ -102,7 +97,7 @@ def get_job(
     job_id: str,
     _: None = Depends(verify_api_key),
 ) -> AnalysisResult:
-    job = job_manager.get(job_id)
+    job = job_store.get(job_id)
 
     if job is None:
         raise HTTPException(

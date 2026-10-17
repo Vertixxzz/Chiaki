@@ -1,7 +1,7 @@
 import type { AnalysisResult } from "../types";
 
 const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"
+  import.meta.env.VITE_API_BASE_URL ?? ""
 ).replace(/\/+$/, "");
 
 async function parseResponse<T>(response: Response): Promise<T> {
@@ -12,7 +12,6 @@ async function parseResponse<T>(response: Response): Promise<T> {
       const body = await response.json();
       message = body.detail ?? message;
     } catch {
-      // Ответ сервера не обязательно содержит JSON.
     }
 
     throw new Error(String(message));

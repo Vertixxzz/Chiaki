@@ -17,7 +17,7 @@ class Violation(BaseModel):
 
 class AnalysisResult(BaseModel):
     job_id: str
-    status: Literal["processing", "done", "failed"]
+    status: Literal["queued", "processing", "done", "failed"]
     verdict: Literal["no_violation", "violation"] | None = None
     violations: list[Violation] = Field(default_factory=list)
     error: str | None = None

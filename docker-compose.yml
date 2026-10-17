@@ -1,0 +1,56 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      API_KEY: ${API_KEY:-dev-only-change-me}
+      UPLOAD_DIR: /app/storage/uploads
+      DATABASE_PATH: /app/storage/chiaki.db
+      MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-200}
+    volumes:
+      - chiaki_storage:/app/storage
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "app.workers.worker"]
+    environment:
+      API_KEY: ${API_KEY:-dev-only-change-me}
+      UPLOAD_DIR: /app/storage/uploads
+      DATABASE_PATH: /app/storage/chiaki.db
+      MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-200}
+    volumes:
+      - chiaki_storage:/app/storage
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ""
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  chiaki_storage:
+
