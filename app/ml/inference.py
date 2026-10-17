@@ -5,6 +5,18 @@ from app.ml.evaluation import aggregate_video_probability
 from app.ml.features import inference_features
 
 def analyze_video(path: Path) -> dict:
+    anomaly_path = MODELS_DIR / 'anomaly_normal_only.joblib'
+    if anomaly_path.exists():
+        artifact = joblib.load(anomaly_path)
+        features, windows = inference_features(path)
+        scores = artifact['model'].score(features)
+        from app.ml.anomaly import aggregate_scores, smooth_scores
+        video_score = aggregate_scores(scores, artifact['aggregation'])
+        best = int(smooth_scores(scores).argmax()); start, end = windows[best]
+        return {'verdict': 'ANOMALY' if video_score >= artifact['threshold'] else 'NORMAL',
+                'probability': float(video_score), 'timestamp': (start + end) / 2,
+                'window_start': start, 'window_end': end,
+                'windows': [{'start': s, 'end': e, 'probability': float(score)} for (s, e), score in zip(windows, scores)]}
     model_path = MODELS_DIR / 'baseline.joblib'
     if not model_path.exists(): raise FileNotFoundError('Model not found. Run: python scripts/train.py')
     features, windows = inference_features(path)

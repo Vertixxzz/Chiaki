@@ -13,6 +13,7 @@ class Settings:
     window_step: float = 5.0
     frame_sample_fps: float = float(os.getenv("FRAME_SAMPLE_FPS", "2"))
     event_safety_margin: float = 0.0
+    event_ambiguity_margin: float = 2.0
     temporal_feature_set: str = "ordered_v1"
     threshold: float = 0.5
     random_seed: int = 42

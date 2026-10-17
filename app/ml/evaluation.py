@@ -71,6 +71,12 @@ class CVResult:
     fold_groups: list[np.ndarray]
     fold_probabilities: list[np.ndarray]
 
+@dataclass
+class NestedCVResult:
+    window_folds: list[dict[str, float]]
+    aggregation_folds: dict[str, list[dict[str, float]]]
+    aggregation_thresholds: dict[str, list[float]]
+
 def grouped_cv(dataset: FeatureDataset, train_mask: np.ndarray, video_targets: dict[str, int], classifier: str) -> CVResult:
     indices = np.flatnonzero(train_mask); groups = dataset.groups[indices]
     group_y = np.array([video_targets[g] for g in groups])
@@ -100,3 +106,46 @@ def aggregation_cv(result: CVResult, video_targets: dict[str, int], strategy: st
         all_groups.append(groups); all_probabilities.append(probabilities)
     y, scores, _ = video_scores(np.concatenate(all_groups), np.concatenate(all_probabilities), video_targets, strategy)
     return fold_metrics, fold_thresholds, choose_video_threshold(y, scores)
+
+def _splits(indices: np.ndarray, groups: np.ndarray, targets: dict[str, int], folds: int):
+    labels = np.array([targets[group] for group in groups[indices]])
+    splitter = StratifiedGroupKFold(n_splits=folds, shuffle=True, random_state=SETTINGS.random_seed)
+    return splitter.split(np.zeros(len(indices)), labels, groups[indices])
+
+def nested_grouped_cv(dataset: FeatureDataset, supervised_mask: np.ndarray, video_targets: dict[str, int], classifier: str) -> NestedCVResult:
+    """Nested group CV: inner videos choose thresholds; outer videos evaluate them."""
+    indices = np.flatnonzero(supervised_mask)
+    groups = dataset.groups
+    window_folds: list[dict[str, float]] = []
+    metrics = {strategy: [] for strategy in AGGREGATION_STRATEGIES}
+    thresholds = {strategy: [] for strategy in AGGREGATION_STRATEGIES}
+    for outer_fit_rel, outer_valid_rel in _splits(indices, groups, video_targets, SETTINGS.cv_folds):
+        outer_fit, outer_valid = indices[outer_fit_rel], indices[outer_valid_rel]
+        # Inner OOF probabilities belong only to outer-training videos.
+        inner_oof = np.full(len(outer_fit), np.nan)
+        for inner_fit_rel, inner_valid_rel in _splits(outer_fit, groups, video_targets, SETTINGS.cv_folds):
+            model = make_classifier(classifier)
+            model.fit(dataset.x[outer_fit[inner_fit_rel]], dataset.y[outer_fit[inner_fit_rel]])
+            inner_oof[inner_valid_rel] = model.predict_proba(dataset.x[outer_fit[inner_valid_rel]])[:, 1]
+        outer_model = make_classifier(classifier)
+        outer_model.fit(dataset.x[outer_fit], dataset.y[outer_fit])
+        outer_probabilities = outer_model.predict_proba(dataset.x[outer_valid])[:, 1]
+        window_folds.append(binary_metrics(dataset.y[outer_valid], outer_probabilities, .5))
+        for strategy in AGGREGATION_STRATEGIES:
+            inner_y, inner_scores, _ = video_scores(groups[outer_fit], inner_oof, video_targets, strategy)
+            threshold = choose_video_threshold(inner_y, inner_scores)
+            outer_y, outer_scores, _ = video_scores(groups[outer_valid], outer_probabilities, video_targets, strategy)
+            thresholds[strategy].append(threshold)
+            metrics[strategy].append(binary_metrics(outer_y, outer_scores, threshold))
+    return NestedCVResult(window_folds, metrics, thresholds)
+
+def final_video_threshold(dataset: FeatureDataset, supervised_mask: np.ndarray, video_targets: dict[str, int], classifier: str, strategy: str) -> float:
+    """Choose deployment threshold on training-only grouped OOF video scores."""
+    indices = np.flatnonzero(supervised_mask); groups = dataset.groups
+    oof = np.full(len(indices), np.nan)
+    for fit_rel, valid_rel in _splits(indices, groups, video_targets, SETTINGS.cv_folds):
+        model = make_classifier(classifier)
+        model.fit(dataset.x[indices[fit_rel]], dataset.y[indices[fit_rel]])
+        oof[valid_rel] = model.predict_proba(dataset.x[indices[valid_rel]])[:, 1]
+    y, scores, _ = video_scores(groups[indices], oof, video_targets, strategy)
+    return choose_video_threshold(y, scores)

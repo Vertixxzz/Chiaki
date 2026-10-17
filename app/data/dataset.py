@@ -10,16 +10,27 @@ class VideoLabel:
     path: Path
     violation: bool
     timestamp: float | None
+    original_filename: str
+    raw_timestamp: str | None
 
 def _number(value: object) -> str:
     match = re.search(r"(\d+)", str(value))
     if not match: raise ValueError(f"No numeric video id in {value!r}")
     return str(int(match.group(1)))
 
-def _timestamp(value: object) -> float | None:
+def parse_timestamp(value: object) -> float | None:
+    """Parse Russian timestamp strings, including compact minute/second forms."""
     if pd.isna(value): return None
-    match = re.search(r"\d+(?:[,.]\d+)?", str(value))
-    return float(match.group().replace(',', '.')) if match else None
+    text = str(value).strip().lower().replace(',', '.')
+    number = r"(\d+(?:\.\d+)?)"
+    minute = re.search(number + r"\s*(?:минута|минуты|минут|мин\.?)", text)
+    second = re.search(number + r"\s*(?:секунда|секунды|секунд|сек\.?)", text)
+    if minute:
+        return float(minute.group(1)) * 60 + (float(second.group(1)) if second else 0.0)
+    if second: return float(second.group(1))
+    # Numeric XLSX values are interpreted as seconds.
+    fallback = re.search(number, text)
+    return float(fallback.group(1)) if fallback else None
 
 def _is_violation(value: object) -> bool:
     text = str(value).strip().lower()
@@ -39,5 +50,6 @@ def load_labels(dataset_dir: Path = DATASET_DIR) -> list[VideoLabel]:
     for _, row in table.iterrows():
         video_id = _number(row[file_col])
         if video_id not in paths: raise FileNotFoundError(f"XLSX refers to {row[file_col]!r}; expected {video_id}.mov")
-        result.append(VideoLabel(video_id, paths[video_id], _is_violation(row[label_col]), _timestamp(row[time_col])))
+        raw_time = None if pd.isna(row[time_col]) else str(row[time_col])
+        result.append(VideoLabel(video_id, paths[video_id], _is_violation(row[label_col]), parse_timestamp(row[time_col]), str(row[file_col]), raw_time))
     return result

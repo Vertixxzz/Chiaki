@@ -26,7 +26,7 @@ def extract_number(filename: str) -> int:
     return int(match.group(1))
 
 
-def parse_timestamp(value) -> int | None:
+def parse_timestamp(value) -> float | None:
     """
     Convert values like:
         '22 секунда'
@@ -41,17 +41,16 @@ def parse_timestamp(value) -> int | None:
     if pd.isna(value):
         return None
 
-    match = re.search(r"\d+(?:[.,]\d+)?", str(value))
-
-    if not match:
-        return None
-
-    number = float(match.group().replace(",", "."))
-
-    if number.is_integer():
-        return int(number)
-
-    return number
+    text = str(value).strip().lower().replace(",", ".")
+    number = r"(\d+(?:\.\d+)?)"
+    minute = re.search(number + r"\s*(?:минута|минуты|минут|мин\.?)", text)
+    second = re.search(number + r"\s*(?:секунда|секунды|секунд|сек\.?)", text)
+    if minute:
+        return float(minute.group(1)) * 60 + (float(second.group(1)) if second else 0.0)
+    if second:
+        return float(second.group(1))
+    fallback = re.search(number, text)
+    return float(fallback.group(1)) if fallback else None
 
 
 def parse_violation(value) -> bool:

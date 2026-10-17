@@ -2,38 +2,34 @@ import unittest
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from app.video.windows import labeled_windows
+from app.data.dataset import parse_timestamp
+from app.video.windows import inference_windows, labeled_windows
 
-class LabeledWindowsTests(unittest.TestCase):
-    def assert_no_negative_overlap(self, windows):
-        positive = next(w for w in windows if w.label == 1)
-        for window in windows:
-            if window.label == 0:
-                self.assertFalse(window.start < positive.end and window.end > positive.start, window)
+class WindowGridTests(unittest.TestCase):
+    def test_timestamp_formats(self):
+        self.assertEqual(parse_timestamp('22 секунда'), 22)
+        self.assertEqual(parse_timestamp('1минута 8 секунда'), 68)
+        self.assertEqual(parse_timestamp('1 минута 8 секунд'), 68)
 
-    def test_event_in_middle_excludes_overlapping_windows(self):
-        windows = labeled_windows(40, 22, 10, 5)
-        self.assertEqual((17, 27), (windows[0].start, windows[0].end))
-        self.assert_no_negative_overlap(windows)
-        self.assertNotIn((15, 25), [(w.start, w.end) for w in windows if not w.label])
+    def test_normal_and_event_videos_share_identical_grid(self):
+        normal = labeled_windows(40, None, 10, 5, 2)
+        event = labeled_windows(40, 22, 10, 5, 2)
+        self.assertEqual([(w.start, w.end) for w in normal], [(w.start, w.end) for w in event])
+        self.assertEqual([(w.start, w.end) for w in normal], inference_windows(40, 10, 5))
 
-    def test_event_near_beginning(self):
-        windows = labeled_windows(30, 1, 10, 5)
-        self.assertEqual((0, 10), (windows[0].start, windows[0].end)); self.assert_no_negative_overlap(windows)
+    def test_timestamp_changes_labels_not_boundaries(self):
+        first = labeled_windows(40, 12, 10, 5, 2)
+        second = labeled_windows(40, 22, 10, 5, 2)
+        self.assertEqual([(w.start, w.end) for w in first], [(w.start, w.end) for w in second])
+        self.assertNotEqual([w.label for w in first], [w.label for w in second])
 
-    def test_event_near_end(self):
-        windows = labeled_windows(30, 29, 10, 5)
-        self.assertEqual((20, 30), (windows[0].start, windows[0].end)); self.assert_no_negative_overlap(windows)
+    def test_ambiguous_windows_are_ignored(self):
+        windows = labeled_windows(40, 20, 10, 5, 6)
+        self.assertIn(-1, [w.label for w in windows])
+        self.assertTrue(all(w.label in (-1, 0, 1) for w in windows))
 
-    def test_short_video(self):
-        windows = labeled_windows(4, 2, 10, 5)
-        self.assertEqual([(0, 4, 1)], [(w.start, w.end, w.label) for w in windows])
-
-    def test_no_event_is_all_negative(self):
-        self.assertTrue(all(w.label == 0 for w in labeled_windows(20, None, 10, 5)))
-
-    def test_safety_margin_excludes_nearby_window(self):
-        windows = labeled_windows(40, 20, 10, 5, safety_margin=5)
-        self.assertTrue(all(not (w.start < 30 and w.end > 10) for w in windows if not w.label))
+    def test_event_near_beginning_and_end_stays_on_grid(self):
+        self.assertEqual([(w.start, w.end) for w in labeled_windows(30, 1, 10, 5)], inference_windows(30, 10, 5))
+        self.assertEqual([(w.start, w.end) for w in labeled_windows(30, 29, 10, 5)], inference_windows(30, 10, 5))
 
 if __name__ == '__main__': unittest.main()

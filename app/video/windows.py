@@ -16,15 +16,29 @@ def sliding_windows(duration: float, size: float, step: float) -> Iterator[tuple
         if end == duration: break
         start += step
 
+def inference_windows(duration: float, size: float, step: float) -> list[tuple[float, float]]:
+    """The single window-boundary source used by training, evaluation and inference."""
+    return list(sliding_windows(duration, size, step))
+
 def labeled_windows(duration: float, event_time: float | None, size: float, step: float,
                     safety_margin: float = 0.0) -> list[Window]:
-    """Make an event-positive window; negatives may not overlap its guarded area."""
-    if event_time is None: return [Window(s, e, 0) for s, e in sliding_windows(duration, size, step)]
-    start = max(0.0, min(event_time - size / 2, max(0.0, duration - size)))
-    end = min(duration, start + size)
-    guard_start, guard_end = max(0.0, start - safety_margin), min(duration, end + safety_margin)
-    result = [Window(start, end, 1)]
-    # Half-open intervals: touching an endpoint is allowed; any actual overlap is not.
-    result += [Window(s, e, 0) for s, e in sliding_windows(duration, size, step)
-               if not (s < guard_end and e > guard_start)]
+    """Label a fixed inference grid; never move a boundary toward an event.
+
+    Labels: 1 when an event timestamp is inside the window, 0 when safely
+    outside its ambiguity region, and -1 for ambiguous windows.  The ambiguity
+    region is event_time ± safety_margin; ignored windows are never fitted or
+    included in window-level metrics, but still exist during inference.
+    """
+    windows = inference_windows(duration, size, step)
+    if event_time is None: return [Window(start, end, 0) for start, end in windows]
+    guard_start, guard_end = event_time - safety_margin, event_time + safety_margin
+    result = []
+    for start, end in windows:
+        if start <= event_time <= end:
+            label = 1
+        elif start < guard_end and end > guard_start:
+            label = -1
+        else:
+            label = 0
+        result.append(Window(start, end, label))
     return result
