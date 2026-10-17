@@ -54,14 +54,22 @@ def choose_video_threshold(y: np.ndarray, scores: np.ndarray) -> float:
 class CVResult:
     probabilities: np.ndarray
     folds: list[dict[str, float]]
+    video_folds: list[dict[str, float]]
+    video_thresholds: list[float]
 
 def grouped_cv(dataset: FeatureDataset, train_mask: np.ndarray, video_targets: dict[str, int], classifier: str) -> CVResult:
     indices = np.flatnonzero(train_mask); groups = dataset.groups[indices]
     group_y = np.array([video_targets[g] for g in groups])
     splitter = StratifiedGroupKFold(n_splits=SETTINGS.cv_folds, shuffle=True, random_state=SETTINGS.random_seed)
-    probabilities = np.full(len(indices), np.nan); folds = []
+    probabilities = np.full(len(indices), np.nan); folds = []; video_folds = []; video_thresholds = []
     for fit, valid in splitter.split(dataset.x[indices], group_y, groups):
         model = make_classifier(classifier); model.fit(dataset.x[indices][fit], dataset.y[indices][fit])
         p = model.predict_proba(dataset.x[indices][valid])[:, 1]; probabilities[valid] = p
         folds.append(binary_metrics(dataset.y[indices][valid], p, .5))
-    return CVResult(probabilities, folds)
+        # `valid` contains whole unseen videos. Aggregate only these windows,
+        # then select/evaluate this fold's video threshold without held-out data.
+        y_video, p_video, _ = video_scores(groups[valid], p, video_targets)
+        threshold = choose_video_threshold(y_video, p_video)
+        video_thresholds.append(threshold)
+        video_folds.append(binary_metrics(y_video, p_video, threshold))
+    return CVResult(probabilities, folds, video_folds, video_thresholds)

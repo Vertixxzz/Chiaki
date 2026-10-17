@@ -28,7 +28,7 @@ def main() -> None:
     print(f'Videos: {len(videos)} (positive {sum(targets.values())}, negative {len(videos)-sum(targets.values())})')
     print(f'Windows: {len(features.y)} (positive {features.y.sum()}, negative {len(features.y)-features.y.sum()})')
     print(f'Held-out test videos: {len(test_ids)}; training videos: {len(train_ids)}')
-    comparison = {}; best_name = None; best_score = -1.; best_window_threshold = .5; best_video_threshold = .5
+    comparison = {}; best_name = None; best_f1 = -1.; best_recall = -1.; best_window_threshold = .5; best_video_threshold = .5
     for name in classifier_names():
         result = grouped_cv(features, train_mask, targets, name)
         window_threshold = choose_threshold(features.y[train_mask], result.probabilities)
@@ -39,17 +39,25 @@ def main() -> None:
         old_video_metric = binary_metrics(cv_video_y, cv_video_scores, window_threshold)
         new_video_metric = binary_metrics(cv_video_y, cv_video_scores, video_threshold)
         summary = {key: {'mean': float(np.nanmean([fold[key] for fold in result.folds])), 'std': float(np.nanstd([fold[key] for fold in result.folds]))} for key in result.folds[0]}
+        video_summary = {key: {'mean': float(np.nanmean([fold[key] for fold in result.video_folds])), 'std': float(np.nanstd([fold[key] for fold in result.video_folds]))} for key in result.video_folds[0]}
         summary['window_threshold'] = window_threshold; summary['video_threshold'] = video_threshold
         summary['video_at_window_threshold'] = old_video_metric; summary['video_at_video_threshold'] = new_video_metric
+        summary['video_fold_metrics'] = video_summary; summary['video_fold_thresholds'] = result.video_thresholds
         comparison[name] = summary
-        print(f"CV {name}: window F1={summary['f1']['mean']:.3f}±{summary['f1']['std']:.3f}, recall={summary['recall']['mean']:.3f}±{summary['recall']['std']:.3f}, precision={summary['precision']['mean']:.3f}±{summary['precision']['std']:.3f}")
-        print(f"  threshold selection: old/window={window_threshold:.2f} -> video F1={old_video_metric['f1']:.3f}, recall={old_video_metric['recall']:.3f}, precision={old_video_metric['precision']:.3f}; new/video={video_threshold:.2f} -> video F1={new_video_metric['f1']:.3f}, recall={new_video_metric['recall']:.3f}, precision={new_video_metric['precision']:.3f}")
-        score = summary['recall']['mean'] * .7 + summary['f1']['mean'] * .3
-        if score > best_score: best_name, best_score, best_window_threshold, best_video_threshold = name, score, window_threshold, video_threshold
+        print(f"CV {name}: video F1={video_summary['f1']['mean']:.3f}±{video_summary['f1']['std']:.3f}, video recall={video_summary['recall']['mean']:.3f}±{video_summary['recall']['std']:.3f}, video precision={video_summary['precision']['mean']:.3f}±{video_summary['precision']['std']:.3f}, video threshold={video_threshold:.2f}")
+        print(f"  diagnostics only: window F1={summary['f1']['mean']:.3f}±{summary['f1']['std']:.3f}; old/window threshold video F1={old_video_metric['f1']:.3f}; OOF pooled video threshold F1={new_video_metric['f1']:.3f}")
+        # Primary selection is mean video F1. Recall breaks practically tied F1.
+        f1, recall = video_summary['f1']['mean'], video_summary['recall']['mean']
+        if f1 > best_f1 + .01 or (abs(f1 - best_f1) <= .01 and recall > best_recall):
+            best_name, best_f1, best_recall, best_window_threshold, best_video_threshold = name, f1, recall, window_threshold, video_threshold
     model = make_classifier(best_name); model.fit(features.x[train_mask], features.y[train_mask])
     MODELS_DIR.mkdir(exist_ok=True); OUTPUTS_DIR.mkdir(exist_ok=True); joblib.dump(model, MODELS_DIR / 'baseline.joblib')
     payload = {'train_ids': sorted(train_ids), 'test_ids': sorted(test_ids), 'selected_model': best_name, 'window_threshold': best_window_threshold, 'video_threshold': best_video_threshold, 'comparison': comparison}
     (OUTPUTS_DIR / 'split.json').write_text(json.dumps(payload, indent=2), encoding='utf-8')
-    print(f'Selected from CV only: {best_name}; window threshold={best_window_threshold:.2f}, video threshold={best_video_threshold:.2f}. Run evaluate.py for untouched test metrics.')
+    print('CV model comparison:')
+    for name, result in comparison.items():
+        metrics = result['video_fold_metrics']
+        print(f"{name}: video F1={metrics['f1']['mean']:.3f}±{metrics['f1']['std']:.3f}, recall={metrics['recall']['mean']:.3f}±{metrics['recall']['std']:.3f}, precision={metrics['precision']['mean']:.3f}±{metrics['precision']['std']:.3f}")
+    print(f'Selected from CV only: classifier={best_name}; video_threshold={best_video_threshold:.2f}. Run evaluate.py for untouched test metrics.')
 
 if __name__ == '__main__': main()
